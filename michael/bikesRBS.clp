@@ -1,0 +1,148 @@
+(defglobal ?*nodGen* = 0)
+
+
+(defrule take
+	(person pos ?p des ?d bike 0 level ?l cost ?c movement ?mov)
+	(bikePoints $?x ?p $?y)
+	(test (neq ?mov drop))
+	(maxDepth ?prof)
+    (test (< ?l ?prof))
+	=>
+	(assert (person pos ?p des ?d bike 1 level (+ ?l 1) cost (+ ?c 1) movement take))
+	(bind ?*nodGen* (+ ?*nodGen* 1))
+)
+
+(defrule cycle
+	(person pos ?p des ?d bike 1 level ?l cost ?c movement ?mov)
+	(map $? pos1 ?p pos2 ?p2 cost ?cW bike 1 $?)
+	(test (neq ?mov ?p2))
+	(maxDepth ?prof)
+    (test (< ?l ?prof))
+	=>
+	(assert (person pos ?p2 des ?d bike 1 level (+ ?l 1) cost (+ ?c (div ?cW 2)) movement ?p))
+	(bind ?*nodGen* (+ ?*nodGen* 1))
+)
+
+(defrule drop
+	(person pos ?p des ?d bike 1 level ?l cost ?c movement ?mov)
+	(bikePoints $?x ?p $?y)
+	(test (neq ?mov take))
+	(maxDepth ?prof)
+    (test (< ?l ?prof))
+	=>
+	(assert (person pos ?p des ?d bike 0 level (+ ?l 1) cost (+ ?c 1) movement drop))
+	(bind ?*nodGen* (+ ?*nodGen* 1))
+)
+
+(defrule walk
+	(person pos ?p des ?d bike 0 level ?l cost ?c movement ?mov)
+	(map $? pos1 ?p pos2 ?p2 cost ?cW bike ? $?)
+	(test (neq ?mov ?p2))
+	(maxDepth ?prof)
+    (test (< ?l ?prof))
+	=>
+	(assert (person pos ?p2 des ?d bike 0 level (+ ?l 1) cost (+ ?c ?cW) movement ?p))
+	(bind ?*nodGen* (+ ?*nodGen* 1))
+)
+
+(defrule stop
+	(declare (salience 100))
+	?f<-(person pos ?p des ?p bike 0 level ?l cost ?c movement ?)
+	=>
+	(printout t "Solution found at level " ?l crlf)
+	(printout t "Cost is " ?c crlf)
+	(printout t "Goal fact " ?f crlf)
+	(printout t "Number of expanded nodes " ?*nodGen* crlf)
+	(halt)
+)
+
+(defrule noSolution
+	(declare (salience -100))
+	(map $?x)
+	=>
+	(printout t "Solution not found" $?x crlf)
+	(halt)
+)
+
+
+(deffunction start ()
+	(reset)
+	(printout t "Maximum depth:= ")
+	(bind ?mDepth (read))
+	(printout t "Search strategy " crlf "	1. Breadth " crlf "2. Depth" crlf)
+	(bind ?mStrategy (read))
+	(if (= ?mStrategy 1)
+		then (set-strategy breadth)
+		else (set-strategy depth)
+	)
+		
+	(printout t "Starting position: (A,B,C etc.)" crlf)
+	(bind ?mPos (read))
+	(printout t "Destination: (A,B,C etc.)" crlf)
+	(bind ?mDes (read))
+	
+	(printout t "ctrl+R to run the program" crlf)
+	
+	(assert (maxDepth ?mDepth))
+	(assert (map pos1 A pos2 B cost 10 bike 1)
+	(map pos1 A pos2 C cost 8 bike 0)
+	(map pos1 A pos2 E cost 10 bike 1)
+	(map pos1 B pos2 C cost 5 bike 0)
+	(map pos1 C pos2 D cost 6 bike 0)
+	(map pos1 E pos2 J cost 9 bike 1)
+	(map pos1 B pos2 F cost 6 bike 0)
+	(map pos1 C pos2 G cost 6 bike 0)
+	(map pos1 C pos2 H cost 6 bike 0)
+	(map pos1 D pos2 H cost 14 bike 1)
+	(map pos1 E pos2 I cost 20 bike 0)
+	(map pos1 J pos2 O cost 7 bike 1)
+	(map pos1 F pos2 K cost 10 bike 0)
+	(map pos1 F pos2 L cost 6 bike 0)
+	(map pos1 G pos2 L cost 9 bike 0)
+	(map pos1 G pos2 M cost 12 bike 0)
+	(map pos1 G pos2 H cost 8 bike 0)
+	(map pos1 H pos2 I cost 12 bike 1)
+	(map pos1 I pos2 O cost 2 bike 0)
+	(map pos1 K pos2 L cost 2 bike 1)
+	(map pos1 L pos2 M cost 7 bike 1)
+	(map pos1 O pos2 N cost 8 bike 1)
+	(map pos1 L pos2 P cost 6 bike 1)
+	(map pos1 M pos2 Q cost 2 bike 0)
+	(map pos1 N pos2 Q cost 6 bike 0)
+	(map pos1 P pos2 R cost 4 bike 1)
+	(map pos1 P pos2 Q cost 2 bike 0)
+	(map pos1 Q pos2 R cost 3 bike 0)
+	;;----------------------------------------
+	(map pos1 C pos2 A cost 8 bike 0)
+	(map pos1 E pos2 A cost 10 bike 1)
+	(map pos1 C pos2 B cost 5 bike 0)
+	(map pos1 D pos2 C cost 6 bike 0)
+	(map pos1 J pos2 E cost 9 bike 1)
+	(map pos1 F pos2 B cost 6 bike 0)
+	(map pos1 G pos2 C cost 6 bike 0)
+	(map pos1 H pos2 C cost 6 bike 0)
+	(map pos1 H pos2 D cost 14 bike 1)
+	(map pos1 I pos2 E cost 20 bike 0)
+	(map pos1 O pos2 J cost 7 bike 1)
+	(map pos1 K pos2 F cost 10 bike 0)
+	(map pos1 L pos2 F cost 6 bike 0)
+	(map pos1 L pos2 G cost 9 bike 0)
+	(map pos1 M pos2 G cost 12 bike 0)
+	(map pos1 H pos2 G cost 8 bike 0)
+	(map pos1 I pos2 H cost 12 bike 1)
+	(map pos1 O pos2 I cost 2 bike 0)
+	(map pos1 L pos2 K cost 2 bike 1)
+	(map pos1 M pos2 L cost 7 bike 1)
+	(map pos1 N pos2 O cost 8 bike 1)
+	(map pos1 P pos2 L cost 6 bike 1)
+	(map pos1 Q pos2 M cost 2 bike 0)
+	(map pos1 Q pos2 N cost 6 bike 0)
+	(map pos1 R pos2 P cost 4 bike 1)
+	(map pos1 Q pos2 P cost 2 bike 0)
+	(map pos1 R pos2 Q cost 3 bike 0)
+	)
+	(assert (bikePoints A B H J K M R N))
+	(assert (person pos ?mPos des ?mDes bike 0 level 0 cost 0 movement null)) ;; bike = 0 no bike; bike = 1 person has a bike
+	;; movement: take - bike was just taken, drop - bike was just dropped, Letter (A,B,C etc.) where we came from
+		
+)
