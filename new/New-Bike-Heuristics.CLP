@@ -70,17 +70,60 @@
 (stations A B J H K M R N)
 (neighbourhoods A1 B2 C2 D2 E2 J2 F3 G3 H3 I3 O3 K4 L4 M4 N4 P5 Q5 R6))
 
-;; (assert (person pos ?start des ?end bike NO cost 0 level 0))
+;; ========================================================
+;; =============      H E U R I S T I C      ==============
+;; ========================================================
+;; h(n)=|DistNeigh(n)|*min(Cam(n))*Sit(n)
 
+;; |DistNeigh(n)| is the absolute value of the distance between the neighborhood of
+;; the location of the user in state n and the neighborhood of the destination point
+;; ================== DistNeigh(n) ==================
+
+
+;; Cam(n) is the set of all of the incoming/outgoing arcs of the node n; we select the
+;; arc of minimum cost from this set
+;; ===================== Cam(n) =====================
+
+
+;; Sit(n)=0.5 if the user has a bike or the user is at a bike point in the state n;
+;; otherwise, Sit(n)=1.
+;; ===================== Sit(n) =====================
+
+
+
+;; g(n): cost of the path from the root node (initial state) to node n
+;; ===================== g(n) =====================
+
+
+
+;; h(n): the heuristic function described above
+;; ===================== h(n) =====================
+
+
+
+;; =============== WALKING ===============
 (defrule walk
 (person pos ?start des ?end bike NO cost ?cost level ?level)
 (path ?start ?pathEnd cost ?pathCost method ?)
 (max-depth ?depth)
 (test (< ?level ?depth))
 =>
-(printout t "curr cost: " ?cost "---- path cost: " ?pathCost "---------- total : " (+ ?cost ?pathCost) crlf)
 (assert (person pos ?pathEnd des ?end bike NO cost (+ ?cost ?pathCost) level (+ ?level 1)))
 (bind ?*nod-gen* (+ ?*nod-gen* 1)))
+
+;; =============== CYCLING ===============
+
+
+
+;; =============== TAKE BIKE ===============
+
+
+;; =============== DROP BIKE ===============
+
+;; ========================================================
+;; =========      S E A R C H   S T R A T E G Y    ========
+;; ========================================================
+;; The goal rule is used to detect when the goal state has been reached
 
 (deffunction start ()
  (set-salience-evaluation when-activated)
@@ -96,11 +139,6 @@
 
  (assert (person pos ?start des ?end bike NO cost 0 level 0))
  (assert (max-depth ?depth)))
-
-;; ========================================================
-;; =========      S E A R C H   S T R A T E G Y    ========
-;; ========================================================
-;; The goal rule is used to detect when the goal state has been reached
 
 (defrule goal
     (declare (salience 100))
