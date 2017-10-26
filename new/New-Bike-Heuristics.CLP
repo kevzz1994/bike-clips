@@ -68,26 +68,52 @@
 (path R P cost 4 method bike)
 
 (stations A B J H K M R N)
-(neighbourhoods A1 B2 C2 D2 E2 J2 F3 G3 H3 I3 O3 K4 L4 M4 N4 P5 Q5 R6))
+(neighbourhoods A1 B2 C2 D2 E2 J2 F3 G3 H3 I3 O3 K4 L4 M4 N4 P5 Q5 R6)
+(arcs A8 B5 C5 D6 E9 J7 F6 G6 H6 I2 O2 K2 L2 M2 N6 P2 Q2 R3))
 
 ;; ========================================================
 ;; =============      H E U R I S T I C      ==============
 ;; ========================================================
 ;; h(n)=|DistNeigh(n)|*min(Cam(n))*Sit(n)
 
-;; |DistNeigh(n)| is the absolute value of the distance between the neighborhood of
-;; the location of the user in state n and the neighborhood of the destination point
+(deffunction control (?currentPosition ?des ?arc ?bike ?cost)
 ;; ================== DistNeigh(n) ==================
+  ;; Get neighbourhood of current position, e.g. Value of index of ?currentPosition + 1
+	(bind ?neighCurrentPos (nth$ (+ 1 (member$ ?currentPosition ?*neighbourhoods*)) ?*neighbourhoods*))
+  ;; Get neighbourhood of destination, e.g. Value of index of ?des + 1
+	(bind ?neighDestination (nth$ (+ 1 (member$ ?des ?*neighbourhoods*)) ?*neighbourhoods*))
 
 
-;; Cam(n) is the set of all of the incoming/outgoing arcs of the node n; we select the
-;; arc of minimum cost from this set
-;; ===================== Cam(n) =====================
+	(if (eq ?neighCurrentPos ?neighDestination)
+		then (bind ?*sal* 1)
+    ;; ---- Wat is het nut hier van? er kan nooit een decimal uitkomen
+		else (bind ?*sal* (abs (- ?neighDestination ?neighCurrentPos)))
+	)
+
+  ;; ==================   Cam(n)  ==================
+  ;;  Get the arc of minimum cost of the node n
+  ;;  Index of ?currentPosition in ?*arcs* + 1, then get value with nth$ of that integer
+  ;;  returns value of Index of previously calculated Integer
+	(bind ?minArc (nth$ (+ 1 (member$ ?currentPosition ?*arcs*)) ?*arcs*))
+
+;; v Snap deze ff niet v
+  ;;(bind ?*sal* (* ?*sal* ?arc))
 
 
-;; Sit(n)=0.5 if the user has a bike or the user is at a bike point in the state n;
-;; otherwise, Sit(n)=1.
-;; ===================== Sit(n) =====================
+  ;; ===================== Sit(n) =====================
+  ;; Sit(n)=0.5 if the user has a bike or the user is at a bike point in the state n;
+  ;; otherwise, Sit(n)=1.
+  ;; meh
+	(if (and (eq ?bike YES) (member$ ?currentPosition ?*bikePts*)))
+		;;then (bind ?*sal* (div ?*sal* 2))
+    then (bind ?*sal* 0.5)
+    else (bind ?*sal* 1)
+	)
+
+	(bind ?*sal* (+ ?*sal* ?cost))
+	;(printout t "sal: " ?*sal* crlf)
+)
+
 
 
 
@@ -103,12 +129,13 @@
 
 ;; =============== WALKING ===============
 (defrule walk
-(person pos ?start des ?end bike NO cost ?cost level ?level)
+(person currentPosition ?start des ?end bike NO cost ?cost level ?level)
 (path ?start ?pathEnd cost ?pathCost method ?)
 (max-depth ?depth)
-(test (< ?level ?depth))
+  (test (< ?level ?depth))
+
 =>
-(assert (person pos ?pathEnd des ?end bike NO cost (+ ?cost ?pathCost) level (+ ?level 1)))
+(assert (person currentPosition ?pathEnd des ?end bike NO cost (+ ?cost ?pathCost) level (+ ?level 1)))
 (bind ?*nod-gen* (+ ?*nod-gen* 1)))
 
 ;; =============== CYCLING ===============
@@ -116,6 +143,8 @@
 
 
 ;; =============== TAKE BIKE ===============
+
+
 
 
 ;; =============== DROP BIKE ===============
@@ -137,12 +166,12 @@
  (assert (destination ?end))
  (printout t " Execute run to start the program " crlf)
 
- (assert (person pos ?start des ?end bike NO cost 0 level 0))
+ (assert (person currentPosition ?start des ?end bike NO cost 0 level 0))
  (assert (max-depth ?depth)))
 
 (defrule goal
     (declare (salience 100))
-    ?f<-(person pos ?start des ?start bike NO cost ?cost level ?level)
+    ?f<-(person currentPosition ?start des ?start bike NO cost ?cost level ?level)
    =>
     (printout t "SOLUTION FOUND AT LEVEL: " ?level crlf)
     (printout t "COST OF REACHING GOAL STATE: " ?cost crlf)
