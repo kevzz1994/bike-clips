@@ -6,6 +6,7 @@
 ;;
 
 (defglobal ?*nod-gen* = 0)
+(defglobal ?*heuristicA* = 1)
 (defglobal ?*stations* = (create$ A B J H K M R N))
 
 (deffacts city
@@ -67,14 +68,13 @@
 (path R Q cost 3 method foot)
 (path R P cost 4 method bike)
 
-(stations A B J H K M R N)
 (neighbourhoods A1 B2 C2 D2 E2 J2 F3 G3 H3 I3 O3 K4 L4 M4 N4 P5 Q5 R6)
 (arcs A8 B5 C5 D6 E9 J7 F6 G6 H6 I2 O2 K2 L2 M2 N6 P2 Q2 R3))
 
 ;; ========================================================
 ;; =============      H E U R I S T I C      ==============
 ;; ========================================================
-;; h(n)=|DistNeigh(n)|*min(Cam(n))*Sit(n)
+;; calculating h(n)=|DistNeigh(n)|*min(Cam(n))*Sit(n)
 
 (deffunction control (?currentPosition ?des ?arc ?bike ?cost)
 ;; ================== DistNeigh(n) ==================
@@ -85,46 +85,34 @@
 
 
 	(if (eq ?neighCurrentPos ?neighDestination)
-		then (bind ?*sal* 1)
+		then (bind ?*heuristicA* 1)
     ;; ---- Wat is het nut hier van? er kan nooit een decimal uitkomen
-		else (bind ?*sal* (abs (- ?neighDestination ?neighCurrentPos)))
+		else (bind ?*heuristicA* (abs (- ?neighDestination ?neighCurrentPos)))
 	)
 
-  ;; ==================   Cam(n)  ==================
+  ;; ==================   Cam(n) (|DistNeigh(n)|*min(Cam(n))) ==================
   ;;  Get the arc of minimum cost of the node n
   ;;  Index of ?currentPosition in ?*arcs* + 1, then get value with nth$ of that integer
   ;;  returns value of Index of previously calculated Integer
-	(bind ?minArc (nth$ (+ 1 (member$ ?currentPosition ?*arcs*)) ?*arcs*))
-
-;; v Snap deze ff niet v
-  ;;(bind ?*sal* (* ?*sal* ?arc))
+	(bind ?*heuristicA* (* ?*heuristicA* (nth$ (+ 1 (member$ ?currentPosition ?*arcs*)) ?*arcs*)))
 
 
-  ;; ===================== Sit(n) =====================
-  ;; Sit(n)=0.5 if the user has a bike or the user is at a bike point in the state n;
-  ;; otherwise, Sit(n)=1.
-  ;; meh
-	(if (and (eq ?bike YES) (member$ ?currentPosition ?*bikePts*)))
-		;;then (bind ?*sal* (div ?*sal* 2))
-    then (bind ?*sal* 0.5)
-    else (bind ?*sal* 1)
+  ;;  ===================== Sit(n) =====================
+  ;;  Sit(n)=0.5 if the user has a bike or the user is at a bike point in the state n;
+  ;;  otherwise, Sit(n)=1.
+	(if (and (eq ?bike YES) (member$ ?currentPosition ?*stations*)))
+    then (bind ?*heuristicA* (* ?*heuristicA 0.5))
+    else (bind ?*heuristicA* (* ?*heuristicA 1))
 	)
 
+  ;;  Calculating f(n)= g(n) + h(n)
+  ;;  ===================== g(n) =====================
+  ;;  Cost of the path from the root node (initial state) to node n;
+  ;;  taking into account the cost of the actions
+  ;;  + the heuristic function described above
 	(bind ?*sal* (+ ?*sal* ?cost))
-	;(printout t "sal: " ?*sal* crlf)
+
 )
-
-
-
-
-;; g(n): cost of the path from the root node (initial state) to node n
-;; ===================== g(n) =====================
-
-
-
-;; h(n): the heuristic function described above
-;; ===================== h(n) =====================
-
 
 
 ;; =============== WALKING ===============
@@ -133,21 +121,25 @@
 (path ?start ?pathEnd cost ?pathCost method ?)
 (max-depth ?depth)
   (test (< ?level ?depth))
-
+;; control function here
 =>
 (assert (person currentPosition ?pathEnd des ?end bike NO cost (+ ?cost ?pathCost) level (+ ?level 1)))
 (bind ?*nod-gen* (+ ?*nod-gen* 1)))
 
 ;; =============== CYCLING ===============
 
-
+;; control function here
+=>
 
 ;; =============== TAKE BIKE ===============
 
-
-
+;; control function here
+=>
 
 ;; =============== DROP BIKE ===============
+
+;; control function here
+=>
 
 ;; ========================================================
 ;; =========      S E A R C H   S T R A T E G Y    ========
