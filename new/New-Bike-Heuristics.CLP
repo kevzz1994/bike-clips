@@ -4,6 +4,8 @@
 ;;	Kevin Schaap
 ;;	Rafael Lobato
 ;;
+;;  Thanks to Jorge Civera Saiz and ,
+;;  Professors of Computer Science, Universitat Politècnica de València
 
 (defglobal ?*nod-gen* = 0)
 (defglobal ?*heuristicA* = 1)
@@ -76,7 +78,7 @@
 ;; ========================================================
 ;; calculating h(n)=|DistNeigh(n)|*min(Cam(n))*Sit(n)
 
-(deffunction control (?currentPosition ?des ?arc ?bike ?cost)
+(deffunction control (?currentPosition ?bike ?currentCost)
 ;; ================== DistNeigh(n) ==================
   ;; Get neighbourhood of current position, e.g. Value of index of ?currentPosition + 1
 	(bind ?neighCurrentPos (nth$ (+ 1 (member$ ?currentPosition ?*neighbourhoods*)) ?*neighbourhoods*))
@@ -110,8 +112,7 @@
   ;;  Cost of the path from the root node (initial state) to node n;
   ;;  taking into account the cost of the actions
   ;;  + the heuristic function described above
-	(bind ?*sal* (+ ?*sal* ?cost))
-
+	(bind ?*heuristicA* (+ ?*heuristicA* ?currentCost))
 )
 
 
